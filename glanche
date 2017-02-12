@@ -7,15 +7,30 @@ set -e
 # [x] -m | --members
 # [ ] -v | --verbose
 # [x] -i | --info
-# [ ] -r | --recursive
-# [x] -a | --add-member
-# [x] -d | --delete-member
+# [x] -a | --add member
+# [x] -d | --delete member
 # [ ] -f | --filename # ?
 # [x] -C | --create
-# [x] -R | --rename # ?
-# [x] -dl | --deletelist
-# [x] --show-lists
+# [x] -R | --rename
+# [x] -D | --delete-list
+# [x] -L | --show-lists
+# [ ] --show-config
+# [x] -n | --dry-run
 # [x] expand lists - gam expects foo@example.com, but we can assume @example.com
+
+# [ ] add_member should accept a comma-separated list
+# [ ] no-args: opts
+# [ ] long opts
+# [ ] domain: configurable
+# [ ] aliases: configurable
+
+function gam_cmd() {
+    if [[ $DRY_RUN ]]; then
+        echo "gam $@"
+    else
+        gam $@
+    fi
+}
 
 # This function will handle config of user aliasing - coming soon. For now, it
 # just takes a string arg and returns it.
@@ -29,67 +44,89 @@ function process_user() {
 
 # This need to be a configurable default domain.
 function process_list() {
-    local str=$1
-
-    case $str in
-        *@* ) echo ${str};;
-        *   ) echo "${str}@projectalloy.org";;
+    case $1 in
+        *@* ) echo $1;;
+        *   ) echo "${1}@projectalloy.org";;
     esac
+}
+
+function validate_list() {
+    :
+    # TODO: $1 shouldn't contain a space, if it exists
 }
 
 # default
 # TODO: add verbose flag
 function members () {
-    local list=$1
-
-    gam print group-members group $list 2>/dev/null \
+    gam_cmd print group-members group $list 2>/dev/null \
         | cut -d, -f 3 \
         | tail -n +2
 }
 
 function info() {
-    local list=$1
-
-    gam info group $list 2>/dev/null
+    gam_cmd info group $list 2>/dev/null
 }
 
 function add_member() {
-    local list=$1
-    local member=$2
+    local member=$(process_user $1)
 
-    gam update group $list add member user $member 2>/dev/null
+    gam_cmd update group $list add member user $member 2>/dev/null
 }
 
 function delete_member() {
-    local list=$1
-    local member=$2
+    local member=$(process_user $1)
 
-    gam update group $list remove member user $member 2>/dev/null
+    gam_cmd update group $list remove member user $member 2>/dev/null
 }
 
 function create_group() {
-    local list=$1
-    local listname=$2 # TODO: make optional?
-
-    gam create group $list name '"$listname"' \
+    gam_cmd create group $list \
         allow_external_members true message_moderation_level moderate_none \
         who_can_post_message anyone_can_post is_archived true 2>/dev/null
 }
 
 function rename_group() {
-    local oldemail=$1
-    local newemail=$2
+    local newemail=$1
 
-    gam update group $oldemail email $newemail 2>/dev/null
+    gam_cmd update group $list email $newemail 2>/dev/null
 }
 
 function delete_group() {
-    local list=$1
-
-    gam delete group $list 2>/dev/null
+    gam_cmd delete group $list 2>/dev/null
 }
 
 function show_lists() {
-    gam print groups 2>/dev/null \
+    gam_cmd print groups 2>/dev/null \
         | tail -n +2
 }
+
+### Main
+while getopts "mia:d:CR:DnL" opt; do
+    verb='';
+    list='';
+    arg=''
+
+    case $opt in
+        m) verb='members';;
+        i) verb='info' ;;
+        a) verb='add_member'; arg=$OPTARG;;
+        d) verb='delete_member'; arg=$OPTARG;;
+        C) verb='create_group';;
+        R) verb='rename_group'; arg=$(process_list $OPTARG);;
+        D) verb='delete_group';;
+        L) verb='show_lists';;
+        n) DRY_RUN=1;;
+    esac
+done
+shift $(expr $OPTIND - 1)
+list=$@
+
+validate_list $list
+list=$(process_list $list)
+
+if [[ "$verb" ]]; then
+    $verb $arg
+else
+    # TODO: docs
+    echo "TODO: docs"
+fi
