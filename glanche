@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Partial implementation of `blanche`, as a wrapper for `gam`.
+#
+# -m | --members
+# -i | --info
+# -r | --recursive
+# -a | --add-member
+# -d | --delete-member
+# -f | --filename
+# -t | --tags # ?
+# -C | --create
+# -R | --rename # ?
+# also: need to be able to list all lists
+# also: aliases for users
