@@ -1,4 +1,6 @@
 #!/bin/bash
+shopt -s extglob
+set -e
 
 # Partial implementation of `blanche`, as a wrapper for `gam`.
 #
@@ -13,8 +15,27 @@
 # [x] -R | --rename # ?
 # [x] -dl | --deletelist
 # [x] --show-lists
-# also: aliases for users
-# also: assume lists are @projectalloy.org or configurable
+# [x] expand lists - gam expects foo@example.com, but we can assume @example.com
+
+# This function will handle config of user aliasing - coming soon. For now, it
+# just takes a string arg and returns it.
+function process_user() {
+    local str=$1
+
+    case $str in
+        *           ) echo ${str};;
+    esac
+}
+
+# This need to be a configurable default domain.
+function process_list() {
+    local str=$1
+
+    case $str in
+        *@* ) echo ${str};;
+        *   ) echo "${str}@projectalloy.org";;
+    esac
+}
 
 # default
 # TODO: add verbose flag
