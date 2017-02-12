@@ -18,11 +18,14 @@ set -e
 # [x] -n | --dry-run
 # [x] expand lists - gam expects foo@example.com, but we can assume @example.com
 
-# [ ] add_member should accept a comma-separated list
+# [x] add_member should accept a comma-separated list
 # [ ] no-args: opts
 # [ ] long opts
 # [ ] domain: configurable
 # [ ] aliases: configurable
+# [ ] docs
+# [x] validate that list is not empty, and contains no spaces
+# [ ] require confirmation for delete-list
 
 function gam_cmd() {
     if [[ $DRY_RUN ]]; then
@@ -42,7 +45,7 @@ function process_user() {
     esac
 }
 
-# This need to be a configurable default domain.
+# This needs to be a configurable default domain.
 function process_list() {
     case $1 in
         *@* ) echo $1;;
@@ -50,9 +53,19 @@ function process_list() {
     esac
 }
 
+# - show_lists does not require that $list be set, but all other sub-commands ('verbs') do
+# - list may not contain a space
 function validate_list() {
-    :
-    # TODO: $1 shouldn't contain a space, if it exists
+    if [[ $verb != 'show_lists' ]]; then
+        if [[ ! "$list" ]]; then
+            echo "\$list must be set but is not."
+            exit 1
+        fi
+        if [[ "$list" =~ ' ']]; then
+            echo "\$list: '${list}' contains a space, something went wrong in arg parsing."
+            exit 1
+        fi
+    fi
 }
 
 # default
@@ -67,10 +80,16 @@ function info() {
     gam_cmd info group $list 2>/dev/null
 }
 
+# add_member takes in a comma-separated list of members (or a single member) and
+# adds them to the list
 function add_member() {
-    local member=$(process_user $1)
+    local input=$1
+    local member=''
 
-    gam_cmd update group $list add member user $member 2>/dev/null
+    for member in $(echo $input | tr "," " "); do
+      member=$(process_user $member)
+      gam_cmd update group $list add member user $member 2>/dev/null
+    done
 }
 
 function delete_member() {
