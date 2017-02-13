@@ -13,18 +13,19 @@ set -e
 # [x] -R | --rename
 # [x] -D | --delete-list
 # [x] -L | --show-lists
-# [ ] --show-config
 # [x] -n | --dry-run
 # [x] expand lists - gam expects foo@example.com, but we can assume @example.com
 
 # [x] add_member should accept a comma-separated list
 # [x] long opts
-# [ ] domain: configurable
-# [ ] aliases: configurable
+# [x] domain: configurable
+# [x] aliases: configurable
 # [x] docs
 # [x] validate that list is not empty, and contains no spaces
 # [x] require confirmation for delete-list
 # [x] make -m default
+
+config_file=~/.glanche
 
 function gam_cmd() {
     if [[ $DRY_RUN ]]; then
@@ -34,13 +35,14 @@ function gam_cmd() {
     fi
 }
 
-# This function will handle config of user aliasing - coming soon. For now, it
-# just takes a string arg and returns it.
+# Stub function handling user aliasing; you can override it in ~/.glanche if you
+# want
 function process_user() {
     local str=$1
 
     case $str in
-        *           ) echo ${str};;
+      # demoalias) echo "somedemoemail@example.com" ;;
+      *) echo $str ;;
     esac
 }
 
@@ -48,15 +50,16 @@ function process_user() {
 function process_list() {
     case $1 in
         *@* ) echo $1;;
-        *   ) echo "${1}@projectalloy.org";;
+        *   ) echo "${1}@${default_domain}";;
     esac
 }
 
 # - show_lists and docs do not require that $list be set, but all other
 #   sub-commands ('verbs') do
+# - if no verb is set, list may be empty
 # - list may not contain a space
 function validate_list() {
-    if [[ $verb != 'show_lists' && $verb != 'docs' ]]; then
+    if [[ $verb != 'show_lists' && $verb != 'docs' && $verb != '' ]]; then
         if [[ ! "$list" ]]; then
             echo "\$list must be set but is not."
             exit 1
@@ -147,8 +150,39 @@ Options are:
 -D | --delete-list # will ask for y/n confirmation
 -L | --show-list # list all the lists gam knows of
 -n | --dry-run # print the gam command instead of running it
+--create-config # create a config file
 END
 
+}
+
+function create_config() {
+    local default_domain=''
+
+    if [[ -f $config_file ]]; then
+        echo "We can't create a config file for you, ${config_file} already exists."
+        exit 1
+    fi
+
+    read -p "What default domain do you want (e.g, example.com)? " default_domain
+
+    cat > $config_file <<-END
+# This is a glanche config file. It has two components: a default_domain, and
+# an
+# optional set of user aliases.
+
+default_domain=\${default_domain:-'$default_domain'}
+
+function process_user() {
+    local str=$1
+
+    case $str in
+        demoalias) echo 'somedemoemail@example.com';;
+        *) echo $str
+    esac
+}
+END
+
+    echo "Config file created at ${config_file}; if you want, add aliases to the process_user() function."
 }
 
 ### Main
@@ -166,6 +200,7 @@ for arg in "$@"; do
         "--dry-run" ) set -- "$@" "-n" ;;
         "--verbose" ) set -- "$@" "-v" ;;
         "--help" ) set -- "$@" "-h" ;;
+        "--create-config" ) create_config ; exit 0 ;;
         *) set -- "$@" "$arg" ;;
     esac
 done
@@ -193,9 +228,30 @@ done
 shift $(expr $OPTIND - 1)
 list="$@"
 
+if ( ! hash gam 2>/dev/null ); then
+    echo "gam not found in PATH; make sure it's installed."
+    exit 1
+fi
+
+if [[ ! -f $config_file ]]; then
+    echo "No config file found - please create one by calling glanche with --create-config"
+    exit 1
+else
+    source $config_file
+fi
+
 validate_list $list
 list=$(process_list $list)
 
-verb=${verb:-members}
-
-$verb $arg
+# Default, no command/verb:
+# - if a list is provided, run -m to list the members for the given list
+# - otherwise, print docs
+if [[ ! "$verb" ]]; then
+  if [[ "$arg" != '' ]]; then
+    members $arg
+  else
+    docs
+  fi
+else
+  $verb $arg
+fi
