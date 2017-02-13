@@ -25,7 +25,7 @@ set -e
 # [ ] aliases: configurable
 # [ ] docs
 # [x] validate that list is not empty, and contains no spaces
-# [ ] require confirmation for delete-list
+# [x] require confirmation for delete-list
 
 function gam_cmd() {
     if [[ $DRY_RUN ]]; then
@@ -61,7 +61,7 @@ function validate_list() {
             echo "\$list must be set but is not."
             exit 1
         fi
-        if [[ "$list" =~ ' ']]; then
+        if [[ "$list" =~ ' ' ]]; then
             echo "\$list: '${list}' contains a space, something went wrong in arg parsing."
             exit 1
         fi
@@ -111,7 +111,15 @@ function rename_group() {
 }
 
 function delete_group() {
-    gam_cmd delete group $list 2>/dev/null
+    local confirm=''
+
+    read -p "Deleting $list: are you sure (y/n)? " -n 1 confirm
+    echo
+    case "$confirm" in
+      y|Y ) echo "Ok." ; gam_cmd delete group $list 2>/dev/null ;;
+      n|N ) echo "Cancelling." ;;
+      * ) echo "Invalid response." ; delete_group;;
+    esac
 }
 
 function show_lists() {
