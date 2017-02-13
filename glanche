@@ -2,28 +2,8 @@
 shopt -s extglob
 set -e
 
-# Partial implementation of `blanche`, as a wrapper for `gam`.
-#
-# [x] -m | --members
-# [x] -v | --verbose
-# [x] -i | --info
-# [x] -a | --add-member
-# [x] -d | --delete-member
-# [x] -C | --create
-# [x] -R | --rename
-# [x] -D | --delete-list
-# [x] -L | --show-lists
-# [x] -n | --dry-run
-# [x] expand lists - gam expects foo@example.com, but we can assume @example.com
-
-# [x] add_member should accept a comma-separated list
-# [x] long opts
-# [x] domain: configurable
-# [x] aliases: configurable
-# [x] docs
-# [x] validate that list is not empty, and contains no spaces
-# [x] require confirmation for delete-list
-# [x] make -m default
+# Partial implementation of `blanche`, as a wrapper for `gam`. See docs() for
+# details.
 
 config_file=~/.glanche
 
