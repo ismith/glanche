@@ -16,4 +16,6 @@ fits, mostly, with the Moira lists `blanche` was used to manage.)
 
 ## Installation
 There's just one file, `glanche`. `gam` installs itself to `~/bin/gam/gam`, so I
-recommend installing `gam` and just dropping `glanche` in next to it.
+recommend installing `gam` and just dropping `glanche` in next to it. `glanche` will
+prompt you to create a config file on first run. Configuring `gam` is beyond the
+scope of this document; see the `gam` docs linked above.
