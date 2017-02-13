@@ -19,14 +19,13 @@ set -e
 # [x] expand lists - gam expects foo@example.com, but we can assume @example.com
 
 # [x] add_member should accept a comma-separated list
-# [ ] no-args: opts
 # [x] long opts
 # [ ] domain: configurable
 # [ ] aliases: configurable
 # [ ] docs
 # [x] validate that list is not empty, and contains no spaces
 # [x] require confirmation for delete-list
-# [ ] make -m default
+# [x] make -m default
 
 function gam_cmd() {
     if [[ $DRY_RUN ]]; then
@@ -173,9 +172,6 @@ list="$@"
 validate_list $list
 list=$(process_list $list)
 
-if [[ "$verb" ]]; then
-    $verb $arg
-else
-    # TODO: docs
-    echo "TODO: docs"
-fi
+verb=${verb:-members}
+
+$verb $arg
