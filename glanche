@@ -7,8 +7,8 @@ set -e
 # [x] -m | --members
 # [ ] -v | --verbose
 # [x] -i | --info
-# [x] -a | --add member
-# [x] -d | --delete member
+# [x] -a | --add-member
+# [x] -d | --delete-member
 # [ ] -f | --filename # ?
 # [x] -C | --create
 # [x] -R | --rename
@@ -20,7 +20,7 @@ set -e
 
 # [x] add_member should accept a comma-separated list
 # [ ] no-args: opts
-# [ ] long opts
+# [x] long opts
 # [ ] domain: configurable
 # [ ] aliases: configurable
 # [ ] docs
@@ -71,13 +71,12 @@ function validate_list() {
 # default
 # TODO: add verbose flag
 function members () {
-    gam_cmd print group-members group $list 2>/dev/null \
-        | cut -d, -f 3 \
-        | tail -n +2
+    gam_cmd print group-members group $list \
+        | cut -d, -f 3
 }
 
 function info() {
-    gam_cmd info group $list 2>/dev/null
+    gam_cmd info group $list
 }
 
 # add_member takes in a comma-separated list of members (or a single member) and
@@ -88,26 +87,26 @@ function add_member() {
 
     for member in $(echo $input | tr "," " "); do
       member=$(process_user $member)
-      gam_cmd update group $list add member user $member 2>/dev/null
+      gam_cmd update group $list add member user $member
     done
 }
 
 function delete_member() {
     local member=$(process_user $1)
 
-    gam_cmd update group $list remove member user $member 2>/dev/null
+    gam_cmd update group $list remove member user $member
 }
 
 function create_group() {
     gam_cmd create group $list \
         allow_external_members true message_moderation_level moderate_none \
-        who_can_post_message anyone_can_post is_archived true 2>/dev/null
+        who_can_post_message anyone_can_post is_archived true
 }
 
 function rename_group() {
     local newemail=$1
 
-    gam_cmd update group $list email $newemail 2>/dev/null
+    gam_cmd update group $list email $newemail
 }
 
 function delete_group() {
@@ -116,18 +115,34 @@ function delete_group() {
     read -p "Deleting $list: are you sure (y/n)? " -n 1 confirm
     echo
     case "$confirm" in
-      y|Y ) echo "Ok." ; gam_cmd delete group $list 2>/dev/null ;;
+      y|Y ) echo "Ok." ; gam_cmd delete group $list ;;
       n|N ) echo "Cancelling." ;;
       * ) echo "Invalid response." ; delete_group;;
     esac
 }
 
 function show_lists() {
-    gam_cmd print groups 2>/dev/null \
-        | tail -n +2
+    gam_cmd print groups
 }
 
 ### Main
+for arg in "$@"; do
+    shift
+    case "$arg" in
+        "--members" ) set -- "$@" "-m" ;;
+        "--info" ) set -- "$@" "-i" ;;
+        "--add-member" ) set -- "$@" "-a" ;;
+        "--delete-member" ) set -- "$@" "-d" ;;
+        "--create" ) set -- "$@" "-C" ;;
+        "--rename" ) set -- "$@" "-R" ;;
+        "--delete-list" ) set -- "$@" "-D" ;;
+        "--show-lists" ) set -- "$@" "-L" ;;
+        "--dry-run" ) set -- "$@" "-n" ;;
+        *) set -- "$@" "$arg" ;;
+    esac
+done
+
+OPTIND=1
 while getopts "mia:d:CR:DnL" opt; do
     verb='';
     list='';
@@ -146,7 +161,7 @@ while getopts "mia:d:CR:DnL" opt; do
     esac
 done
 shift $(expr $OPTIND - 1)
-list=$@
+list="$@"
 
 validate_list $list
 list=$(process_list $list)
