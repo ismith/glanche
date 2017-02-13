@@ -5,7 +5,7 @@ set -e
 # Partial implementation of `blanche`, as a wrapper for `gam`.
 #
 # [x] -m | --members
-# [ ] -v | --verbose
+# [x] -v | --verbose
 # [x] -i | --info
 # [x] -a | --add-member
 # [x] -d | --delete-member
@@ -26,6 +26,7 @@ set -e
 # [ ] docs
 # [x] validate that list is not empty, and contains no spaces
 # [x] require confirmation for delete-list
+# [ ] make -m default
 
 function gam_cmd() {
     if [[ $DRY_RUN ]]; then
@@ -68,11 +69,15 @@ function validate_list() {
     fi
 }
 
-# default
-# TODO: add verbose flag
 function members () {
+    if [[ "$verbose" ]]; then
+      processor='cat'
+    else
+      processor='cut -d, -f 3'
+    fi
+
     gam_cmd print group-members group $list \
-        | cut -d, -f 3
+        | $processor
 }
 
 function info() {
@@ -138,12 +143,13 @@ for arg in "$@"; do
         "--delete-list" ) set -- "$@" "-D" ;;
         "--show-lists" ) set -- "$@" "-L" ;;
         "--dry-run" ) set -- "$@" "-n" ;;
+        "--verbose" ) set -- "$@" "-v" ;;
         *) set -- "$@" "$arg" ;;
     esac
 done
 
 OPTIND=1
-while getopts "mia:d:CR:DnL" opt; do
+while getopts "mia:d:CR:DnLv" opt; do
     verb='';
     list='';
     arg=''
@@ -158,6 +164,7 @@ while getopts "mia:d:CR:DnL" opt; do
         D) verb='delete_group';;
         L) verb='show_lists';;
         n) DRY_RUN=1;;
+        v) verbose=1;;
     esac
 done
 shift $(expr $OPTIND - 1)
