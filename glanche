@@ -22,7 +22,7 @@ set -e
 # [x] long opts
 # [ ] domain: configurable
 # [ ] aliases: configurable
-# [ ] docs
+# [x] docs
 # [x] validate that list is not empty, and contains no spaces
 # [x] require confirmation for delete-list
 # [x] make -m default
@@ -53,10 +53,11 @@ function process_list() {
     esac
 }
 
-# - show_lists does not require that $list be set, but all other sub-commands ('verbs') do
+# - show_lists and docs do not require that $list be set, but all other
+#   sub-commands ('verbs') do
 # - list may not contain a space
 function validate_list() {
-    if [[ $verb != 'show_lists' ]]; then
+    if [[ $verb != 'show_lists' && $verb != 'docs' ]]; then
         if [[ ! "$list" ]]; then
             echo "\$list must be set but is not."
             exit 1
@@ -129,6 +130,28 @@ function show_lists() {
     gam_cmd print groups
 }
 
+function docs() {
+    cat <<-END
+glanche is a wrapper for gam (https://github.com/jay0lee/GAM) in the vein of MIT
+Athena's blanche
+
+Usage: glanche [options] listname
+
+Options are:
+-v | --verbose # only for -m
+-m | --members
+-i | --info
+-a | --add-members
+-d | --delete-members
+-C | --create
+-R | --rename
+-D | --delete-list # will ask for y/n confirmation
+-L | --show-list # list all the lists gam knows of
+-n | --dry-run # print the gam command instead of running it
+END
+
+}
+
 ### Main
 for arg in "$@"; do
     shift
@@ -143,12 +166,13 @@ for arg in "$@"; do
         "--show-lists" ) set -- "$@" "-L" ;;
         "--dry-run" ) set -- "$@" "-n" ;;
         "--verbose" ) set -- "$@" "-v" ;;
+        "--help" ) set -- "$@" "-h" ;;
         *) set -- "$@" "$arg" ;;
     esac
 done
 
 OPTIND=1
-while getopts "mia:d:CR:DnLv" opt; do
+while getopts "mia:d:CR:DnLvh" opt; do
     verb='';
     list='';
     arg=''
@@ -164,6 +188,7 @@ while getopts "mia:d:CR:DnLv" opt; do
         L) verb='show_lists';;
         n) DRY_RUN=1;;
         v) verbose=1;;
+        h) verb='docs';;
     esac
 done
 shift $(expr $OPTIND - 1)
