@@ -9,7 +9,6 @@ set -e
 # [x] -i | --info
 # [x] -a | --add-member
 # [x] -d | --delete-member
-# [ ] -f | --filename # ?
 # [x] -C | --create
 # [x] -R | --rename
 # [x] -D | --delete-list
