@@ -185,12 +185,11 @@ for arg in "$@"; do
     esac
 done
 
+verb=''
+list=''
+arg=''
 OPTIND=1
 while getopts "mia:d:CR:DnLvh" opt; do
-    verb='';
-    list='';
-    arg=''
-
     case $opt in
         m) verb='members';;
         i) verb='info' ;;
